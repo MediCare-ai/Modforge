@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modforge</title>
+<style>
+  :root {
+    --bg: #1d1815;
+    --bg-2: #2a221d;
+    --card: #2f2620;
+    --line: #47382d;
+    --orange: #ff7a1a;
+    --orange-hot: #ffa040;
+    --text: #f6ece4;
+    --muted: #b9a596;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+    background:
+      radial-gradient(circle at 15% -10%, rgba(255,122,26,0.18), transparent 45%),
+      radial-gradient(circle at 90% 110%, rgba(255,122,26,0.12), transparent 40%),
+      linear-gradient(180deg, var(--bg-2), var(--bg));
+    background-attachment: fixed;
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ===== Top bar ===== */
+  .navbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: rgba(29,24,21,0.92);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    animation: fadeDown 0.6s ease both;
+  }
+
+  .navbar-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-mark {
+    width: 40px;
+    height: 40px;
+    flex: 0 0 auto;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--orange), var(--orange-hot));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 18px rgba(255,122,26,0.35);
+  }
+
+  .logo-mark svg { width: 22px; height: 22px; color: #1d1815; }
+
+  .brand {
+    font-size: 1.35rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    background: linear-gradient(90deg, var(--orange), var(--orange-hot));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .tagline {
+    margin-left: auto;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  @media (max-width: 600px) {
+    .tagline { display: none; }
+  }
+
+  /* ===== Toolbar: search + categories ===== */
+  .toolbar {
+    position: sticky;
+    top: 69px;
+    z-index: 10;
+    background: rgba(29,24,21,0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    padding: 16px 20px;
+  }
+
+  .toolbar-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .search {
+    position: relative;
+    width: 100%;
+  }
+
+  .search input {
+    width: 100%;
+    padding: 14px 18px 14px 46px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    color: var(--text);
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .search input::placeholder { color: var(--muted); }
+
+  .search input:focus {
+    border-color: var(--orange);
+    box-shadow: 0 0 0 4px rgba(255,122,26,0.15);
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    pointer-events: none;
+  }
+
+  .chips {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--line) transparent;
+  }
+
+  .chip {
+    flex: 0 0 auto;
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    padding: 8px 16px;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .chip:hover {
+    border-color: var(--orange);
+    color: var(--text);
+  }
+
+  .chip.active {
+    background: linear-gradient(90deg, var(--orange), var(--orange-hot));
+    border-color: transparent;
+    color: #1d1815;
+  }
+
+  .meta {
+    max-width: 1200px;
+    margin: 20px auto 0;
+    padding: 0 20px;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  /* ===== Grid ===== */
+  .grid {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px 20px 80px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+  }
+
+  @media (max-width: 720px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    background: linear-gradient(160deg, var(--card), #251e19);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    transform: translateY(24px);
+    animation: rise 0.6s ease forwards;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  }
+
+  .card:hover {
+    transform: translateY(-6px);
+    border-color: var(--orange);
+    box-shadow: 0 14px 40px -10px rgba(255,122,26,0.45);
+  }
+
+  .media {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    background: linear-gradient(135deg, #3a2d24, #1f1915);
+    overflow: hidden;
+  }
+
+  .media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.5s ease;
+  }
+
+  .card:hover .media img { transform: scale(1.05); }
+
+  .placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--orange);
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    background:
+      repeating-linear-gradient(45deg, transparent 0 14px, rgba(255,122,26,0.05) 14px 28px),
+      linear-gradient(135deg, rgba(255,122,26,0.15), transparent);
+  }
+
+  .placeholder.hidden { display: none; }
+
+  .tag {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: rgba(29,24,21,0.8);
+    border: 1px solid var(--orange);
+    color: var(--orange-hot);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 999px;
+    z-index: 1;
+  }
+
+  .body {
+    padding: 18px 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+  }
+
+  .name {
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+
+  .desc {
+    color: var(--muted);
+    font-size: 0.92rem;
+    line-height: 1.5;
+    flex: 1;
+  }
+
+  .btn {
+    margin-top: 12px;
+    display: inline-block;
+    text-align: center;
+    text-decoration: none;
+    background: linear-gradient(90deg, var(--orange), var(--orange-hot));
+    color: #1d1815;
+    font-weight: 700;
+    padding: 11px 16px;
+    border-radius: 10px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+  }
+
+  .btn:hover {
+    transform: scale(1.03);
+    box-shadow: 0 0 20px rgba(255,122,26,0.6);
+    filter: brightness(1.08);
+  }
+
+  .empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: var(--muted);
+    padding: 60px 20px;
+  }
+
+  .empty strong { color: var(--text); }
+
+  /* ===== Scroll to top ===== */
+  .to-top {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    border: 1px solid var(--orange);
+    background: var(--card);
+    color: var(--orange);
+    font-size: 1.2rem;
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(12px);
+    transition: opacity 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .to-top.show {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+
+  .to-top:hover { box-shadow: 0 0 18px rgba(255,122,26,0.5); }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.85rem;
+    padding: 24px;
+    border-top: 1px solid var(--line);
+  }
+
+  @keyframes rise {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation: none !important;
+      transition: none !important;
+    }
+    html { scroll-behavior: auto; }
+    .card { opacity: 1; transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="navbar-inner">
+    <div class="logo-mark" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2c.5 3.5 3 5.5 4.5 8 1.1 1.9 1.5 3.6 1.1 5.6A5.6 5.6 0 0 1 12 20a5.6 5.6 0 0 1-5.6-4.4c-.4-2 .1-3.7 1.1-5.2 1 1.6 1.8 2.5 2.9 3C10 9 10.4 5.5 12 2z"/>
+      </svg>
+    </div>
+    <span class="brand">Modforge</span>
+    <span class="tagline">Packs and mods for Minecraft Bedrock</span>
+  </div>
+</nav>
+
+<div class="toolbar">
+  <div class="toolbar-inner">
+    <label class="search">
+      <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="7"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <input id="search" type="search" placeholder="Search mods..." autocomplete="off" aria-label="Search mods">
+    </label>
+    <div class="chips" id="chips" role="tablist" aria-label="Categories"></div>
+  </div>
+</div>
+
+<div class="meta" id="meta"></div>
+
+<main class="grid" id="grid"></main>
+
+<button class="to-top" id="toTop" aria-label="Back to top">&uarr;</button>
+
+<footer>Modforge &middot; Minecraft Bedrock mods</footer>
+
+<script>
+  // ===== MOD LIST =====
+  // To add or change a mod, edit this list.
+  // category: one of the names in CATEGORIES below.
+  // image: path to the picture (e.g. "images/bakender.jpg"). Leave "" to show the placeholder.
+  // link: the MediaFire download link.
+  const CATEGORIES = ["All", "Texture Packs", "PvP", "SMP", "HUD", "Vanilla"];
+
+  const MODS = [
+    {
+      name: "Bakender 16x",
+      category: "Texture Packs",
+      description: "A 16x texture pack built for smooth performance.",
+      image: "images/bakender.jpg",
+      link: "https://www.mediafire.com/file/qv0k7utcipqmihp/Bakender_16x_for_MCPE.mcpack/file"
+    },
+    {
+      name: "Anime Sky",
+      category: "Texture Packs",
+      description: "Purple cloud skies that transform your world.",
+      image: "images/anime-sky.jpg",
+      link: "https://www.mediafire.com/file/0xq0a3v886wsc40/ANIME_SKY_1.mcpack/file"
+    },
+    {
+      name: "Smooth PVP",
+      category: "PvP",
+      description: "A clean texture pack made for PvP.",
+      image: "images/smooth-pvp.jpg",
+      link: "https://www.mediafire.com/file/s64jothj3rk5u4o/VAES_15K_FOR_MCPE.mcpack/file"
+    },
+    {
+      name: "Mr Bot SMP Pack",
+      category: "SMP",
+      description: "A texture pack inspired by Mr Bot's SMP.",
+      image: "images/mr-bot.jpg",
+      link: "https://www.mediafire.com/file/c78fav9enblcoy4/MrBot2k_Mcpe.mcpack/file"
+    },
+    {
+      name: "Rajesh SMP Pack",
+      category: "SMP",
+      description: "A texture pack for SMP and PvP servers.",
+      image: "images/rajesh.jpg",
+      link: "https://www.mediafire.com/file/srd0hxeqer0q6vw/RAJESH_SMP_PACK_MCPE.mcpack/file"
+    },
+    {
+      name: "Sharpness 100K",
+      category: "PvP",
+      description: "A 100K texture pack with a sharp, bold look.",
+      image: "images/sharpness-100k.jpg",
+      link: "https://www.mediafire.com/file/qbpwltvdsoqgo5y/SHARPNESS_100K_MCPE.mcpack/file"
+    },
+    {
+      name: "Bakubi Crosshair",
+      category: "HUD",
+      description: "A custom crosshair overlay for your HUD.",
+      image: "images/bakubi-crosshair.jpg",
+      link: "https://www.mediafire.com/file/jy7fo765finctkb/BakuBi_Crosshair_by_NotJunaid.mcpack/file"
+    },
+    {
+      name: "Savodemon Texture Pack",
+      category: "Texture Packs",
+      description: "A texture pack with a unique Savo Demon style.",
+      image: "images/savodemon.jpg",
+      link: "https://www.mediafire.com/file/4wsrcxn6qy521tv/Savo_Demon_50k_Pack.mcpack/file"
+    },
+    {
+      name: "DonVision 10K Pack",
+      category: "Texture Packs",
+      description: "A 10K texture pack from DonVision.",
+      image: "images/donvision.jpg",
+      link: "https://www.mediafire.com/file/lz8zlvxy0ltim19/DonVision.mcpack/file"
+    },
+    {
+      name: "Marlow Vanilla V2",
+      category: "Vanilla",
+      description: "An upgraded vanilla-style pack with a fresh look.",
+      image: "images/marlow-vanilla.jpg",
+      link: "https://www.mediafire.com/file/t7vhwc6ljyk1yjn/VANILLA_V2.mcpack/file"
+    }
+  ];
+
+  // ===== STATE =====
+  let activeCategory = "All";
+  let query = "";
+
+  const grid = document.getElementById("grid");
+  const chipsEl = document.getElementById("chips");
+  const searchEl = document.getElementById("search");
+  const metaEl = document.getElementById("meta");
+  const toTopBtn = document.getElementById("toTop");
+
+  // ===== CATEGORY CHIPS =====
+  CATEGORIES.forEach(cat => {
+    const chip = document.createElement("button");
+    chip.className = "chip" + (cat === activeCategory ? " active" : "");
+    chip.textContent = cat;
+    chip.setAttribute("role", "tab");
+    chip.addEventListener("click", () => {
+      activeCategory = cat;
+      document.querySelectorAll(".chip").forEach(c => c.classList.toggle("active", c === chip));
+      render();
+    });
+    chipsEl.appendChild(chip);
+  });
+
+  // ===== SEARCH =====
+  searchEl.addEventListener("input", e => {
+    query = e.target.value.trim().toLowerCase();
+    render();
+  });
+
+  // ===== RENDER =====
+  function buildCard(mod, i) {
+    const card = document.createElement("article");
+    card.className = "card";
+    card.style.animationDelay = (i * 0.06) + "s";
+
+    const media = document.createElement("div");
+    media.className = "media";
+
+    const placeholder = document.createElement("div");
+    placeholder.className = "placeholder";
+    placeholder.textContent = "Mod image";
+    media.appendChild(placeholder);
+
+    if (mod.image) {
+      const img = document.createElement("img");
+      img.alt = mod.name;
+      img.src = mod.image;
+      img.onload = () => placeholder.classList.add("hidden");
+      img.onerror = () => img.remove();
+      media.appendChild(img);
+    }
+
+    const tag = document.createElement("span");
+    tag.className = "tag";
+    tag.textContent = mod.category;
+    media.appendChild(tag);
+
+    const body = document.createElement("div");
+    body.className = "body";
+    body.innerHTML = `
+      <h2 class="name"></h2>
+      <p class="desc"></p>
+      <a class="btn" target="_blank" rel="noopener noreferrer">Download</a>
+    `;
+    body.querySelector(".name").textContent = mod.name;
+    body.querySelector(".desc").textContent = mod.description;
+    body.querySelector(".btn").href = mod.link;
+
+    card.appendChild(media);
+    card.appendChild(body);
+    return card;
+  }
+
+  function render() {
+    const matches = MODS.filter(mod => {
+      const inCategory = activeCategory === "All" || mod.category === activeCategory;
+      const haystack = (mod.name + " " + mod.description + " " + mod.category).toLowerCase();
+      const matchesQuery = !query || haystack.includes(query);
+      return inCategory && matchesQuery;
+    });
+
+    grid.innerHTML = "";
+
+    if (matches.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "empty";
+      empty.innerHTML = `No mods found${query ? ` for <strong></strong>` : ""}${activeCategory !== "All" ? ` in ${activeCategory}` : ""}.`;
+      const strong = empty.querySelector("strong");
+      if (strong) strong.textContent = query;
+      grid.appendChild(empty);
+    } else {
+      matches.forEach((mod, i) => grid.appendChild(buildCard(mod, i)));
+    }
+
+    metaEl.textContent = `Showing ${matches.length} of ${MODS.length} mods`;
+  }
+
+  // ===== SCROLL TO TOP =====
+  window.addEventListener("scroll", () => {
+    toTopBtn.classList.toggle("show", window.scrollY > 400);
+  });
+
+  toTopBtn.addEventListener("click", () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+
+  render();
+</script>
+
+</body>
+</html>
